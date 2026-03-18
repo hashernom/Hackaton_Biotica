@@ -1,11 +1,25 @@
 # Entornos virtuales
 venv/
 env/
+.venv/
 
-# Variables de entorno (¡CRÍTICO!)
+# Variables de entorno (¡CRÍTICO! nunca subir al repo)
 .env
 
-# Archivos temporales de Python y base de datos
+# Base de datos local
+*.db
+*.sqlite3
+
+# Cache de Python
 __pycache__/
 *.pyc
-*.sqlite3
+*.pyo
+*.pyd
+.Python
+
+# Logs
+*.log
+
+# IDEs
+.vscode/
+.idea/

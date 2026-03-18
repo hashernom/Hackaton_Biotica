@@ -1,4 +1,16 @@
-streamlit
-openai
-python-dotenv
-pandas
+# API REST
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+
+# IA / LLM
+openai>=1.30.0
+
+# Base de datos y exportación
+pandas>=2.0.0
+openpyxl>=3.1.0
+
+# Encriptación de datos sensibles
+cryptography>=42.0.0
+
+# Utilidades
+python-dotenv>=1.0.0
