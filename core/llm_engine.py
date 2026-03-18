@@ -1,7 +1,7 @@
 """
 core/llm_engine.py  ·  Biótica Consultores
 ==========================================
-Motor de IA.  Inyecta automáticamente la hora actual de Colombia
+Motor de IA. Inyecta automáticamente la hora actual de Colombia
 al inicio del último mensaje del usuario para que el bot pueda
 validar el horario de atención.
 """
@@ -22,16 +22,10 @@ client = OpenAI(
     base_url="https://api.groq.com/openai/v1",
 )
 
-MAX_HISTORIAL = 6
+MAX_HISTORIAL = 10
 
 # Zona horaria Colombia (UTC-5, sin cambio de horario)
 TZ_COL = timezone(timedelta(hours=-5))
-
-# Mapeo día inglés → español para el mensaje al usuario
-DIAS_ES = {
-    "Monday": "lunes", "Tuesday": "martes", "Wednesday": "miércoles",
-    "Thursday": "jueves", "Friday": "viernes", "Saturday": "sábado", "Sunday": "domingo"
-}
 
 
 def _hora_colombia() -> str:
