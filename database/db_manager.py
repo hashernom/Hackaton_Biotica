@@ -1,5 +1,3 @@
-<<<<<<< Updated upstream
-=======
 """
 database/db_manager.py  ·  Biótica Consultores
 ===============================================
@@ -205,4 +203,3 @@ def obtener_historial_sesion(session_id: str) -> List[dict]:
             con, params=(session_id,),
         )
     return df.to_dict(orient="records") if not df.empty else []
->>>>>>> Stashed changes

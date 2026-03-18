@@ -15,30 +15,13 @@ from dotenv import load_dotenv
 
 from core.prompts import SYSTEM_PROMPT
 
-# Cargar las variables del .env
 load_dotenv()
 
-# Conectamos directamente a los servidores ultra-rápidos de Groq
 client = OpenAI(
     api_key=os.getenv("GROQ_API_KEY"),
     base_url="https://api.groq.com/openai/v1",
 )
 
-<<<<<<< Updated upstream
-def procesar_mensaje(mensaje_usuario):
-    try:
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile", # Modelo premium gratis y rapidísimo
-            response_format={"type": "json_object"}, # Groq soporta JSON estricto
-            messages=[
-                {"role": "system", "content": f"{SYSTEM_PROMPT}\n\nREGLA: Responde estrictamente con un JSON válido."},
-                {"role": "user", "content": mensaje_usuario}
-            ],
-            temperature=0.1
-        )
-        
-        # Parseamos el JSON
-=======
 MAX_HISTORIAL = 6
 
 # Zona horaria Colombia (UTC-5, sin cambio de horario)
@@ -86,22 +69,12 @@ def procesar_mensaje(historial_mensajes: list) -> dict:
             max_tokens=800,
         )
 
->>>>>>> Stashed changes
         return json.loads(response.choices[0].message.content)
 
     except json.JSONDecodeError as e:
         print(f"[llm_engine] JSON parse error: {e}")
         return _fallback()
     except Exception as e:
-<<<<<<< Updated upstream
-        error_real = str(e)
-        print(f"Error en Groq: {error_real}")
-        return {
-            "clasificacion": "Error de conexión",
-            "urgencia": "Normal",
-            "respuesta_bot": f"Detalle del error: {error_real}"
-        }
-=======
         print(f"[llm_engine] Groq error: {e}")
         return _fallback()
 
@@ -119,4 +92,3 @@ def _fallback() -> dict:
         "respuesta_bot": "Lo siento, tuve un problema de conexión. ¿Podrías repetir tu mensaje?",
         "es_finalizado": False,
     }
->>>>>>> Stashed changes
