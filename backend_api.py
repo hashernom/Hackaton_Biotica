@@ -16,6 +16,7 @@ Ejecutar:
 import io
 import os
 import secrets
+from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import List, Optional
 
@@ -35,10 +36,21 @@ from database.db_manager import (
     guardar_sesion,
 )
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Lifespan (reemplaza el deprecado @app.on_event)
+# ─────────────────────────────────────────────────────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    print("[OK] Base de datos lista.")
+    yield
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # App
 # ─────────────────────────────────────────────────────────────────────────────
-app = FastAPI(title="Biótica Consultores API", version="2.0.0")
+app = FastAPI(title="Biótica Consultores API", version="2.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -53,11 +65,11 @@ app.add_middleware(
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Auth — token en memoria (simple y sin dependencias extra)
+# Auth
 # ─────────────────────────────────────────────────────────────────────────────
 ADMIN_USER     = os.getenv("ADMIN_USER", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "biotica2025")
-_tokens: dict[str, str] = {}   # token → usuario
+_tokens: dict[str, str] = {}
 
 
 def _nuevo_token(usuario: str) -> str:
@@ -93,15 +105,6 @@ class LoginRequest(BaseModel):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Startup
-# ─────────────────────────────────────────────────────────────────────────────
-@app.on_event("startup")
-def startup():
-    init_db()
-    print("✅  Base de datos lista.")
-
-
-# ─────────────────────────────────────────────────────────────────────────────
 # Sistema
 # ─────────────────────────────────────────────────────────────────────────────
 @app.get("/api/health", tags=["Sistema"])
@@ -110,7 +113,7 @@ def health():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Auth
+# Auth endpoints
 # ─────────────────────────────────────────────────────────────────────────────
 @app.post("/api/admin/login", tags=["Admin"])
 def login(req: LoginRequest):
@@ -132,39 +135,28 @@ def logout(authorization: str = Header(...), _: str = Depends(verificar_token)):
 # ─────────────────────────────────────────────────────────────────────────────
 @app.post("/api/chat", tags=["Chat"])
 def chat(req: ChatRequest):
-    """
-    Procesa el mensaje y guarda el historial en SQLite por session_id.
-    Cumple: Interacción en tiempo real + Registro y almacenamiento.
-    """
     try:
         t_inicio = datetime.now()
-
         historial = [{"role": m.role, "content": m.content} for m in req.messages]
-
         lead_temp = req.lead_temp or {
             "nombre": "N/A", "contacto": "N/A",
             "proyecto": "N/A", "ubicacion": "N/A", "info_tecnica": "",
         }
         lead_temp.setdefault("info_tecnica", "")
 
-        # Crear/registrar sesión
         session_id = req.session_id or secrets.token_hex(8)
         guardar_sesion(session_id)
 
-        # Guardar último mensaje del usuario
         ultimo_user = next((m for m in reversed(req.messages) if m.role == "user"), None)
         if ultimo_user:
             guardar_mensaje_historial(session_id, "user", ultimo_user.content)
 
-        # Lógica principal (IA + DB)
         resultado, lead_actualizado, fue_guardado = ejecutar_logica_backend(
             historial_mensajes=historial,
             lead_temp=lead_temp,
         )
 
-        # Guardar respuesta del bot
         guardar_mensaje_historial(session_id, "assistant", resultado.get("respuesta_bot", ""))
-
         t_ms = int((datetime.now() - t_inicio).total_seconds() * 1000)
 
         return {
@@ -182,7 +174,7 @@ def chat(req: ChatRequest):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Historial de sesiones (admin)
+# Historial de sesiones
 # ─────────────────────────────────────────────────────────────────────────────
 @app.get("/api/admin/sesiones", tags=["Admin"])
 def get_sesiones(_: str = Depends(verificar_token)):
@@ -196,7 +188,7 @@ def get_historial_chat(session_id: str, _: str = Depends(verificar_token)):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Leads (admin)
+# Leads
 # ─────────────────────────────────────────────────────────────────────────────
 @app.get("/api/admin/leads", tags=["Admin"])
 def get_leads(
@@ -207,58 +199,35 @@ def get_leads(
     df = obtener_todas_las_solicitudes()
     if df.empty:
         return {"metricas": _metricas_vacias(), "leads": []}
-
     metricas = _calcular_metricas(df)
-
     if urgencia:
         df = df[df["urgencia"].str.lower() == urgencia.lower()]
-
-    return {
-        "metricas": metricas,
-        "leads": df.head(limite).to_dict(orient="records"),
-    }
+    return {"metricas": metricas, "leads": df.head(limite).to_dict(orient="records")}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Indicadores de desempeño (gráficos)
+# Stats
 # ─────────────────────────────────────────────────────────────────────────────
 @app.get("/api/admin/stats", tags=["Admin"])
 def get_stats(_: str = Depends(verificar_token)):
-    """
-    Indicadores para los gráficos del dashboard:
-      - Solicitudes por servicio (clasificación)
-      - Solicitudes por urgencia
-      - Solicitudes por día (últimos 30 días)
-      - % solicitudes filtradas (Fuera de alcance)
-      - % urgentes
-    Cumple: Generación de indicadores de desempeño.
-    """
     df = obtener_todas_las_solicitudes()
     if df.empty:
         return _stats_vacias()
 
-    # Por clasificación
     vc = df["clasificacion"].value_counts()
     por_clasificacion = [{"servicio": k, "total": int(v)} for k, v in vc.items()]
 
-    # Por urgencia
     vu = df["urgencia"].value_counts()
     por_urgencia = [{"nivel": k, "total": int(v)} for k, v in vu.items()]
 
-    # Por día
     df["fecha_dt"] = pd.to_datetime(df["fecha"], errors="coerce")
     df_ok = df.dropna(subset=["fecha_dt"])
-    por_dia_raw = (
-        df_ok.groupby(df_ok["fecha_dt"].dt.date).size().reset_index()
-    )
+    por_dia_raw = df_ok.groupby(df_ok["fecha_dt"].dt.date).size().reset_index()
     por_dia_raw.columns = ["fecha", "total"]
-    por_dia = [
-        {"fecha": str(r["fecha"]), "total": int(r["total"])}
-        for _, r in por_dia_raw.tail(30).iterrows()
-    ]
+    por_dia = [{"fecha": str(r["fecha"]), "total": int(r["total"])} for _, r in por_dia_raw.tail(30).iterrows()]
 
-    total = len(df)
-    fuera  = int(len(df[df["clasificacion"].str.lower() == "fuera de alcance"]))
+    total    = len(df)
+    fuera    = int(len(df[df["clasificacion"].str.lower() == "fuera de alcance"]))
     urgentes = int(len(df[df["urgencia"] == "Alta"]))
 
     return {
@@ -278,17 +247,13 @@ def get_stats(_: str = Depends(verificar_token)):
 # ─────────────────────────────────────────────────────────────────────────────
 @app.get("/api/admin/export/excel", tags=["Admin"])
 def export_excel(_: str = Depends(verificar_token)):
-    """Exporta leads + resumen a Excel (.xlsx) con dos hojas."""
     df = obtener_todas_las_solicitudes()
     if df.empty:
         raise HTTPException(status_code=404, detail="No hay datos para exportar.")
-
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
         df.to_excel(writer, index=False, sheet_name="Solicitudes")
-        resumen = pd.DataFrame([_calcular_metricas(df)])
-        resumen.to_excel(writer, index=False, sheet_name="Resumen")
-
+        pd.DataFrame([_calcular_metricas(df)]).to_excel(writer, index=False, sheet_name="Resumen")
     output.seek(0)
     filename = f"biotica_leads_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
     return StreamingResponse(
@@ -300,11 +265,9 @@ def export_excel(_: str = Depends(verificar_token)):
 
 @app.get("/api/admin/export/csv", tags=["Admin"])
 def export_csv(_: str = Depends(verificar_token)):
-    """Exporta leads a CSV."""
     df = obtener_todas_las_solicitudes()
     if df.empty:
         raise HTTPException(status_code=404, detail="No hay datos para exportar.")
-
     stream = io.StringIO()
     df.to_csv(stream, index=False, encoding="utf-8")
     stream.seek(0)

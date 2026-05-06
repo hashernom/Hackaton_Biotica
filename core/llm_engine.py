@@ -14,6 +14,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 
 from core.prompts import SYSTEM_PROMPT
+from core.utils import limpiar_y_cargar_json
 
 load_dotenv()
 
@@ -31,7 +32,7 @@ TZ_COL = timezone(timedelta(hours=-5))
 def _hora_colombia() -> str:
     """Devuelve string tipo: 'Monday 09:35' en hora Colombia."""
     ahora = datetime.now(TZ_COL)
-    dia   = ahora.strftime("%A")   # English day name (para la IA)
+    dia   = ahora.strftime("%A")
     hora  = ahora.strftime("%H:%M")
     return f"{dia} {hora}"
 
@@ -50,7 +51,6 @@ def procesar_mensaje(historial_mensajes: list) -> dict:
 
         for i, m in enumerate(ultimos):
             content = m["content"]
-            # Inyectamos la hora solo en el ÚLTIMO mensaje del usuario
             if m["role"] == "user" and i == len(ultimos) - 1:
                 content = f"{hora_tag}\n{content}"
             mensajes_ia.append({"role": m["role"], "content": content})
@@ -63,7 +63,11 @@ def procesar_mensaje(historial_mensajes: list) -> dict:
             max_tokens=800,
         )
 
-        return json.loads(response.choices[0].message.content)
+        raw = response.choices[0].message.content
+        resultado = limpiar_y_cargar_json(raw)
+        if resultado is None:
+            raise Exception("JSON inválido devuelto por la IA")
+        return resultado
 
     except json.JSONDecodeError as e:
         print(f"[llm_engine] JSON parse error: {e}")

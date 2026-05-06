@@ -106,7 +106,7 @@ def _generar_excel(datos: dict) -> bytes:
 
     ws.append(headers)
     for cell in ws[1]:
-        cell.font      = header_fill and header_font
+        cell.font      = header_font
         cell.fill      = header_fill
         cell.alignment = Alignment(horizontal="center")
 

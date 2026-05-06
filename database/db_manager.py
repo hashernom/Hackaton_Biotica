@@ -38,10 +38,10 @@ else:
     _temp_key = Fernet.generate_key()
     _fernet   = Fernet(_temp_key)
     print(
-        "[db_manager] ⚠️  ENCRYPT_KEY no configurada. "
-        "Generando clave temporal (los datos no serán recuperables entre reinicios).\n"
-        f"  Añade esto a tu .env:\n  ENCRYPT_KEY={_temp_key.decode()}"
+        "[db_manager] [WARN] ENCRYPT_KEY no configurada. "
+        "Generando clave temporal (los datos no serán recuperables entre reinicios)."
     )
+    print(f"  Anade esto a tu .env:\n  ENCRYPT_KEY={_temp_key.decode()}")
 
 
 def _enc(texto: str) -> str:

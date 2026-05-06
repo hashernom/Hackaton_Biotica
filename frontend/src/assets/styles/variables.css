@@ -1,0 +1,46 @@
+:root {
+  /* Brand Palette */
+  --color-primary:   #54B435;
+  --color-secondary: #A0BF1B;
+  --color-dark:      #334737;
+  --color-white:     #FFFFFF;
+
+  /* Derived */
+  --color-primary-light: #6FCA50;
+  --color-primary-dark:  #3D8A27;
+  --color-dark-light:    #455E49;
+  --color-dark-ultra:    #1E2E21;
+
+  /* Semantic */
+  --color-bg:      #F4F8F4;
+  --color-surface: #FFFFFF;
+  --color-border:  #D6E8D0;
+  --color-text:    #1E2E21;
+  --color-muted:   #6A7C6D;
+  --color-accent:  #A0BF1B;
+
+  /* Chat specific */
+  --chat-user-bg:   var(--color-dark);
+  --chat-user-text: var(--color-white);
+  --chat-bot-bg:    var(--color-white);
+  --chat-bot-text:  var(--color-text);
+  --chat-area-bg:   #EDF4EC;
+
+  /* Typography */
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body:    'DM Sans', 'Segoe UI', sans-serif;
+
+  /* Spacing */
+  --radius-sm:  8px;
+  --radius-md:  14px;
+  --radius-lg:  24px;
+  --radius-xl:  40px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 4px rgba(51,71,55,0.08);
+  --shadow-md: 0 4px 20px rgba(51,71,55,0.12);
+  --shadow-lg: 0 8px 40px rgba(51,71,55,0.18);
+
+  /* Transitions */
+  --transition: 0.22s ease;
+}
