@@ -23,7 +23,10 @@ Hackaton_Biotica/
 │       ├── components/   # ChatBox, ChatInput, ChatMessage...
 │       ├── services/     # api.js, chat.service, admin.service
 │       └── store/        # Vuex — estado global
+├── data/
+│   └── servicios_biotica.txt  # Catálogo de servicios
 ├── .env                  # Variables de entorno (NO subir)
+├── .gitignore            # Archivos excluidos del repo
 ├── requirements.txt      # Dependencias Python
 └── start.bat             # Script para levantar todo junto
 ```
@@ -44,7 +47,7 @@ Hackaton_Biotica/
 ### 1. Clonar el repositorio
 
 ```bash
-git clone https://github.com/tu-usuario/Hackaton_Biotica.git
+git clone https://github.com/hashernom/Hackaton_Biotica.git
 cd Hackaton_Biotica
 ```
 
@@ -75,7 +78,7 @@ SMTP_PASS=xxxx xxxx xxxx xxxx
 EMAIL_DESTINO=secretaria@tuempresa.com
 
 # Encriptación DB (genera una clave con el comando de abajo)
-ENCRYPT_KEY=
+ENCRYPT_KEY=tu_clave_fernet_generada
 ```
 
 Para generar la `ENCRYPT_KEY`:
@@ -181,6 +184,17 @@ Requiere una **contraseña de aplicación** de Gmail (no la contraseña normal):
 
 ---
 
+## 📁 Archivos que NO se suben al repo
+
+```
+.env                        # Credenciales
+*.db                        # Base de datos local
+venv/                       # Entorno virtual Python
+frontend/node_modules/      # Dependencias Node
+__pycache__/                # Cache de Python
+```
+
+---
 ---
 
 ## 👩‍💻 Autores
